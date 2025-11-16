@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="stylesheet" href="style.css">
+    <title>Happy Birthday 🎉</title>
+</head>
+
+<body>
+    <div class="card" role="main" aria-live="polite">
+        <header>
+            <div class="logo">❤</div>
+            <div>
+                <h1>Special Surprise for <span id="namePlaceholder">[Name]</span></h1>
+                <p class="lead">Click the gift to open — birthday wishes inside 🎂</p>
+            </div>
+        </header>
+
+        <div class="body">
+            <div class="left">
+                <div class="gift" id="giftBtn" title="Click to open">
+                    <div class="ribbon"></div>
+                    <div class="bow">🎀</div>
+                    <div style="z-index:2">Open 🎁</div>
+                </div>
+            </div>
+
+            <div class="right">
+                <div class="slideshow" id="slideshow">
+                    <!-- Placeholders: replace photo1.jpg etc. -->
+                    <img src="image1.jpg" id="slideImg" alt="Photo"
+                        onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22720%22 height=%22380%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23fdeef6%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2232%22 fill=%22%23d14d83%22>Replace photo1.jpg in folder</text></svg>'">
+                </div>
+
+                <div class="controls">
+                    <button class="btn" id="prevBtn">◀ Prev</button>
+                    <button class="btn" id="nextBtn">Next ▶</button>
+                    <button class="btn" id="autoBtn">Auto ▶</button>
+                    <label style="margin-left:auto;font-size:13px;opacity:.85">Slides: <span
+                            id="slideIndex">1</span>/<span id="slideTotal">3</span></label>
+                </div>
+
+                <div class="message">
+                    <div class="big-msg" id="bigMsg">Happy Birthday!</div>
+                    <div id="smallMsg" style="margin-top:8px">Wishing you love, laughter and success. You're amazing —
+                        enjoy your day! 🎉</div>
+
+                    <div class="reveal">
+                        <button class="btn" id="revealBtn">Reveal Surprise</button>
+                        <button class="btn" id="downloadBtn">Save as Image</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Surprise overlay -->
+    <div class="surprise" id="surpriseOverlay" aria-hidden="true">
+        <div class="panel" role="dialog" aria-modal="true">
+            <h2 id="surpriseTitle">Happy Birthday, Renu Thakur 🎈</h2>
+            <p id="surpriseText">You are loved more than you know. Here's a little message made with 💖 just for you.
+            </p>
+            <button class="close" id="surpriseClose">Close</button>
+        </div>
+    </div>
+
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- Optional audio: add song.mp3 in same folder and un-comment -->
+    <audio id="bgMusic" loop>
+        <source src="Happy Birthday Music.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        /* ========== Config (Customize these) ========== */
+        const RECIPIENT = "Renu Thakur!";
+        const BIG_MESSAGE = "Happy Birthday, Renu D!"; // big headline
+        const SMALL_MESSAGE ="You're my favourite sister-friend — may all your dreams come true. Love you! ♥"; // message
+        const SLIDES = ["image1.jpg", "image2.jpg", "image3.jpg"]; // put your images in same folder
+        const AUTO_SLIDE_INTERVAL = 3000; // ms
+        /* ============================================= */
+
+        document.getElementById('namePlaceholder').textContent = RECIPIENT;
+        document.getElementById('bigMsg').textContent = BIG_MESSAGE;
+        document.getElementById('smallMsg').textContent = SMALL_MESSAGE;
+        document.getElementById('surpriseTitle').textContent = BIG_MESSAGE;
+        document.getElementById('surpriseText').innerHTML = "<strong>Happy Birthday to the most amazing sister</strong> I found in the most unexpected way! 🎉💛 We didn’t know each other from the beginning… our journey started just 7 months ago during a course, and in those three months of meeting, talking, and attending classes together, something beautiful formed — a bond like real brother and sister. Even now, when we stay far and only talk through chats and messages, nothing has changed. You’re still that same supportive, inspiring, and pure soul I’m lucky to call my sister.<b> I truly admire your dreams — your goal of doing a PhD and becoming independent. And trust me, you have everything it takes to achieve it.</b> I’ll always be cheering for you from my side. Thank you for being a part of my life. Wishing you a birthday filled with happiness, success, and all the strength you need to reach your dreams. You deserve the best, always. 💛✨ — Your brother Ashish🤍";
+        document.getElementById('slideTotal').textContent = SLIDES.length;
+
+        let idx = 0;
+        const imgEl = document.getElementById('slideImg');
+        const slideIndexLabel = document.getElementById('slideIndex');
+        let autoTimer = null;
+        let confettiRunning = false;
+
+        function showSlide(i) {
+            idx = (i + SLIDES.length) % SLIDES.length;
+            imgEl.style.opacity = 0;
+            setTimeout(() => { imgEl.src = SLIDES[idx]; imgEl.style.opacity = 1; }, 260);
+            slideIndexLabel.textContent = idx + 1;
+        }
+        showSlide(0);
+
+        document.getElementById('prevBtn').addEventListener('click', () => { showSlide(idx - 1); stopAuto(); });
+        document.getElementById('nextBtn').addEventListener('click', () => { showSlide(idx + 1); stopAuto(); });
+        document.getElementById('autoBtn').addEventListener('click', () => {
+            if (autoTimer) { stopAuto(); document.getElementById('autoBtn').textContent = "Auto ▶"; }
+            else { startAuto(); document.getElementById('autoBtn').textContent = "Stop ⏹"; }
+        });
+
+        function startAuto() { autoTimer = setInterval(() => showSlide(idx + 1), AUTO_SLIDE_INTERVAL); }
+        function stopAuto() { if (autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
+
+        /* Gift open logic */
+        const giftBtn = document.getElementById('giftBtn');
+        const surprise = document.getElementById('surpriseOverlay');
+        const revealBtn = document.getElementById('revealBtn');
+        const surpriseClose = document.getElementById('surpriseClose');
+
+        giftBtn.addEventListener('click', () => {
+            // small "open" animation
+            giftBtn.style.transform = "scale(0.96) translateY(-8px) rotate(-6deg)";
+            setTimeout(() => { giftBtn.style.transform = "scale(1)"; }, 250);
+            // after short delay show overlay + confetti + music
+            setTimeout(() => {
+                surprise.style.display = "flex"; surprise.setAttribute('aria-hidden', 'false');
+                playConfetti();
+                // try to play music (may be blocked on mobile until user interacts)
+                const audio = document.getElementById('bgMusic');
+                if (audio && audio.querySelector('source')) { audio.play().catch(() => { }); }
+            }, 500);
+        });
+
+        /* Reveal button — big animation & confetti */
+        revealBtn.addEventListener('click', () => {
+            playConfetti(150);
+            const panel = document.querySelector('.panel');
+            panel.animate([{ transform: 'scale(.96) rotate(-3deg)' }, { transform: 'scale(1)' }], { duration: 420, iterations: 1 });
+        });
+
+        /* Close overlay */
+        surpriseClose.addEventListener('click', () => {
+            surprise.style.display = "none"; surprise.setAttribute('aria-hidden', 'true');
+        });
+
+        /* Save as image (screenshot of card) */
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            try {
+                // Use HTMLCanvasElement.toDataURL by drawing the card via clone (simple approach)
+                const card = document.querySelector('.card');
+                // For simplicity, use svg foreignObject rendering:
+                const w = card.offsetWidth, h = card.offsetHeight;
+                const data = `
+      <svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'>
+        <foreignObject width='100%' height='100%'>
+          ${new XMLSerializer().serializeToString(card)}
+        </foreignObject>
+      </svg>`;
+                const img = new Image();
+                const svgBlob = new Blob([data], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+                    ctx.drawImage(img, 0, 0);
+                    const a = document.createElement('a');
+                    a.download = 'happy-birthday.png';
+                    a.href = canvas.toDataURL('image/png');
+                    a.click();
+                    URL.revokeObjectURL(url);
+                };
+                img.src = url;
+            } catch (e) {
+                alert("Save failed — use screenshot on your device instead.");
+            }
+        });
+
+        /* Simple confetti system */
+        const confettiCanvas = document.getElementById('confettiCanvas');
+        const ctx = confettiCanvas.getContext('2d');
+        let confettiPieces = [];
+
+        function resizeCanvas() {
+            confettiCanvas.width = window.innerWidth;
+            confettiCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+        function rand(min, max) { return Math.random() * (max - min) + min; }
+        function createConfetti(n = 80) {
+            confettiPieces = [];
+            for (let i = 0; i < n; i++) {
+                confettiPieces.push({
+                    x: rand(0, confettiCanvas.width),
+                    y: rand(-confettiCanvas.height, 0),
+                    r: rand(6, 12),
+                    d: rand(10, 30),
+                    tilt: rand(-15, 15),
+                    color: ['#ff6ea1', '#ffd3e8', '#ff9ad1', '#ffd6ea'][Math.floor(rand(0, 4))]
+                });
+            }
+        }
+        let confettiAnimId = null;
+
+        function drawConfetti() {
+            ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+            confettiPieces.forEach((p) => {
+                ctx.beginPath();
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.r, p.r * 0.6);
+            });
+        }
+
+        function updateConfetti() {
+            confettiPieces.forEach((p, i) => {
+                p.y += Math.cos(p.d) + 2 + p.r / 8;
+                p.x += Math.sin(p.d);
+                p.tilt += 0.02;
+                if (p.y > confettiCanvas.height + 20) { p.y = rand(-100, -10); p.x = rand(0, confettiCanvas.width); }
+            });
+        }
+
+        function confettiLoop() {
+            drawConfetti();
+            updateConfetti();
+            confettiAnimId = requestAnimationFrame(confettiLoop);
+        }
+
+        function playConfetti(n = 120) {
+            if (confettiRunning) { return; }
+            createConfetti(n);
+            confettiCanvas.style.display = 'block';
+            confettiRunning = true;
+            confettiLoop();
+            // stop after 6s
+            setTimeout(() => { stopConfetti(); }, 6000);
+        }
+
+        function stopConfetti() {
+            if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+            confettiRunning = false;
+            confettiCanvas.style.display = 'none';
+            confettiPieces = [];
+        }
+
+        /* Prevent long running auto if user leaves */
+        document.addEventListener('visibilitychange', () => { if (document.hidden) stopAuto(); });
+
+    </script>
+</body>
+
+</html>
